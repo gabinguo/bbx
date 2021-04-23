@@ -120,9 +120,10 @@ if __name__ == "__main__":
 
     args_parser = argparse.ArgumentParser()
     args_parser.add_argument("--filename", type=str, help="filepath to the squad-like file")
+    args_parser.add_argument("--field", type=str, default="data", help="filed to parser examples")
     args = args_parser.parse_args()
 
-    queries = read_squad_file(args.filename, field="data")
+    queries = read_squad_file(args.filename, field=args.field)
     check_integrity(queries)
 
 
