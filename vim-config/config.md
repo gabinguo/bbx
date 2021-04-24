@@ -74,6 +74,45 @@ curl -fLo ~/.vim/autoload/plug.vim --create-dirs \
 II. Write these to .vimrc
 
 ```bash
+set runtimepath+=~/.vim_runtime
 
+call plug#begin('~/.vim/plugged')
+Plug 'junegunn/fzf', { 'do': { -> fzf#install() } }
+Plug 'junegunn/fzf.vim'
+Plug 'airblade/vim-gitgutter'
+call plug#end()
+
+source ~/.vim_runtime/vimrcs/basic.vim
+source ~/.vim_runtime/vimrcs/filetypes.vim
+source ~/.vim_runtime/vimrcs/plugins_config.vim
+source ~/.vim_runtime/vimrcs/extended.vim
+
+try
+source ~/.vim_runtime/my_configs.vim
+catch
+endtry
+
+colorscheme desert
+set rnu
+set foldcolumn=0
+imap jj <Esc>
+autocmd BufEnter * if tabpagenr('$') == 1 && winnr('$') == 1 && exists('b:NERDTree') && b:NERDTree.isTabTree() |
+    \ quit | endif
+map <F5> :NERDTreeToggle<CR>
+let g:NERDTreeWinPos = "left"
+
+set foldopen=all
+set foldlevelstart=99
+
+execute pathogen#infect()
+syntax on
+filetype plugin indent on
+
+let g:fzf_preview_window = 'right:50%'
+let g:fzf_layout = { 'window': { 'width': 0.9, 'height': 0.6  }  }
+
+let &t_SI = "\<Esc>]50;CursorShape=1\x7"
+let &t_SR = "\<Esc>]50;CursorShape=2\x7"
+let &t_EI = "\<Esc>]50;CursorShape=0\x7"
 ```
 
