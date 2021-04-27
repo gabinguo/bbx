@@ -77,7 +77,7 @@ II. Write these to .vimrc
 set runtimepath+=~/.vim_runtime
 
 call plug#begin('~/.vim/plugged')
-Plug 'junegunn/fzf', { 'do': { -> fzf#install() } }
+Plug 'junegunn/fzf',
 Plug 'junegunn/fzf.vim'
 Plug 'airblade/vim-gitgutter'
 call plug#end()
