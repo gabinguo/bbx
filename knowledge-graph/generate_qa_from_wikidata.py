@@ -10,65 +10,11 @@ from tqdm import tqdm
 from multiprocessing import Pool as ProcessPool
 import uuid
 import random
+import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 logging.getLogger().setLevel(logging.INFO)
 logging.basicConfig(format='%(asctime)s\t[%(levelname)s]\t%(message)s', datefmt='%Y-%m-%d,%H:%M:%S')
-
-
-# query the triplets from one specific category
-def request_triplets(category: str = "Q7889", relations: List[str] = None, limit=500, top_k=5, relation_excluded=["P31"]):
-    if not category or category[0] != 'Q':
-        raise ValueError("category can't be None and it must start with 'Q'.")
-    if not relations:
-        logging.info(f"relations is empty, will automatic query the top-{top_k} relations for category: {category}")
-        query_top_k_relations = construct_query_for_entity(category)
-        results = request_from_endpoint(query_top_k_relations)
-        relations = [result['p']['value'].split('/')[-1] for result in results if
-                     result['p']['value'].split('/')[-1] not in relation_excluded]
-
-    triplets = {}
-    for relation in tqdm(relations, desc="Request Wikidata/Wikipedia url of subject: "):
-        property_url = f"http://www.wikidata.org/prop/direct/{relation}"
-        resultsAll = request_from_endpoint(
-            query_subject_wikidata_wikipedia_url.format(property=property_url, entityId=category, limit=limit))
-        result_map = dict()
-        for result in resultsAll["results"]["bindings"]:
-            qid = result["entity"]["value"].split('/')[-1]
-            result_map[qid] = {
-                "subject_wikidata_url": result["entity"]["value"],
-                "subject_wikipedia_url": result["wikipedia_link"]["value"],
-                "subject_label": result["wikipedia_link"]["value"].split("/")[-1]
-            }
-        triplets[relation] = result_map
-
-
-    trash_pool = []
-    for relation in tqdm(triplets, desc="Get object/labels of property/article of subject: "):
-        for entity in triplets[relation]:
-            # get the article
-            try:
-                triplets[relation][entity]["subject_article"] = process_full_text(
-                    fetch_full_text(triplets[relation][entity]["subject_label"]))
-            except:
-                trash_pool.append((relation, entity))
-                logging.info("Trash bin + 1")
-                continue
-            try:
-                answer_url = request_object(entity, relation)[0]
-                answer_label = request_label(answer_url.split("/")[-1])
-                triplets[relation][entity]["text"] = answer_label
-                triplets[relation][entity]["answer_url"] = answer_url
-            except IndexError:
-                trash_pool.append((relation, entity))
-                logging.info("Trash bin + 1")
-                continue
-
-    for trash in trash_pool:
-        del triplets[trash[0]][trash[1]]
-    logging.info(f"Empty trash bin, {len(trash_pool)} examples are thrown away")
-
-
-    return triplets
 
 
 def request_object(entity, property):
@@ -125,11 +71,6 @@ def process_full_text(article: str):
         paragraphs = [para for para in paragraphs if len(para.split()) > limit]
         return "\n".join(paragraphs)
 
-    def remove_header(paragraph):
-        chunks = paragraph.split("\n")
-        chunks = [chunk for chunk in chunks if "===" not in chunk and "==" not in chunk]
-        return "\n".join(chunks)
-
     return remove_empty_lines(article)
 
 
@@ -181,11 +122,78 @@ def formulate_queries_in_squad_style(triplets, question_map):
     return query_pool
 
 
+# query the triplets from one specific category
+def request_triplets(category: str = "Q7889", relations: List[str] = None, limit=500, top_k=5,
+                     relation_excluded=["P31"]):
+    if not category or category[0] != 'Q':
+        raise ValueError("category can't be None and it must start with 'Q'.")
+    if not relations:
+        logging.info(f"relations is empty, will automatic query the top-{top_k} relations for category: {category}")
+        query_top_k_relations = construct_query_for_entity(category)
+        results = request_from_endpoint(query_top_k_relations)
+        relations = [result['p']['value'].split('/')[-1] for result in results if
+                     result['p']['value'].split('/')[-1] not in relation_excluded]
+
+    triplets = {}
+    for relation in tqdm(relations, desc="Request Wikidata/Wikipedia url of subject: "):
+        property_url = f"http://www.wikidata.org/prop/direct/{relation}"
+        resultsAll = request_from_endpoint(
+            query_subject_wikidata_wikipedia_url.format(property=property_url, entityId=category, limit=limit))
+        result_map = dict()
+        for result in resultsAll["results"]["bindings"]:
+            qid = result["entity"]["value"].split('/')[-1]
+            result_map[qid] = {
+                "subject_wikidata_url": result["entity"]["value"],
+                "subject_wikipedia_url": result["wikipedia_link"]["value"],
+                "subject_label": result["wikipedia_link"]["value"].split("/")[-1]
+            }
+        triplets[relation] = result_map
+
+    trash_pool = []
+
+    def combined_operations(payload):
+        triplets_, relation_, entity_ = payload
+        article_ = process_full_text(
+            fetch_full_text(triplets_[relation_][entity_]["subject_label"]))
+        answer_url_ = request_object(entity_, relation_)[0]
+        answer_label_ = request_label(answer_url_.split("/")[-1])
+        return article_, answer_label_, answer_url_, relation_, entity_
+
+    processes = []
+    with ThreadPoolExecutor(max_workers=4) as executor:
+        for relation in tqdm(triplets, desc="Send task to the multi-threading pool"):
+            for entity in triplets[relation]:
+                try:
+                    processes.append(executor.submit(combined_operations, (triplets, relation, entity)))
+                except:
+                    trash_pool.append((relation, entity))
+                    logging.info("Trash bin + 1")
+                    continue
+    with tqdm(total=len(processes)) as pbar:
+        for task in as_completed(processes):
+            article, answer_label, answer_url, relation_task, entity_task = task.result()
+            if article and answer_label and answer_url:
+                triplets[relation_task][entity_task]["subject_article"] = article
+                triplets[relation_task][entity_task]["text"] = answer_label
+                triplets[relation_task][entity_task]["answer_url"] = answer_url
+            else:
+                trash_pool.append((relation_task, entity_task))
+            pbar.update(1)
+
+    for trash in trash_pool:
+        del triplets[trash[0]][trash[1]]
+    logging.info(f"Empty trash bin, {len(trash_pool)} examples are thrown away")
+
+    return triplets
+
+
 def main():
+    start_time = time.time()
     NUMBER_QUESTIONS = 5
     LIMIT_TRIPLETS_PER_RELATION = 1000
     CATEGORY = "Q7889"  # Video Game
     RELATIONS = ["P123", "P178", "P136", "P495", "P577", "P750", "P400", "P404", "P921", "P737"]
+    # RELATIONS = ["P123"]
 
     # get the general information about triplets
     triplets = request_triplets(CATEGORY, relations=RELATIONS, limit=LIMIT_TRIPLETS_PER_RELATION)
@@ -202,6 +210,8 @@ def main():
 
     with open("./known_relations_train.json", 'w') as f:
         json.dump({"version": "known_relations", "data": query_pool}, f)
+
+    logging.info(f"Time used {round(time.time() - start_time, 2)}s")
 
 
 if __name__ == "__main__":
