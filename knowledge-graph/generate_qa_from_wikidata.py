@@ -26,7 +26,7 @@ def request_triplets(category: str = "Q7889", relations: List[str] = None, limit
                      result['p']['value'].split('/')[-1] not in relation_excluded]
 
     triplets = {}
-    for relation in tqdm(relations):
+    for relation in tqdm(relations, desc="Request Wikidata/Wikipedia url of subject: "):
         property_url = f"http://www.wikidata.org/prop/direct/{relation}"
         resultsAll = request_from_endpoint(
             query_subject_wikidata_wikipedia_url.format(property=property_url, entityId=category, limit=limit))
@@ -40,7 +40,7 @@ def request_triplets(category: str = "Q7889", relations: List[str] = None, limit
             }
         triplets[relation] = result_map
 
-    for relation in triplets:
+    for relation in tqdm(triplets, desc="Get object/labels of property/article of subject: "):
         for entity in triplets[relation]:
             try:
                 answer_url = request_object(entity, relation)[0]
