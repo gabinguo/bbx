@@ -172,7 +172,7 @@ def main():
     NUMBER_QUESTIONS = 5
     LIMIT_TRIPLETS_PER_RELATION = 20
     CATEGORY = "Q7889"  # Video Game
-    RELATIONS = ["P123", "P178"]
+    RELATIONS = ["P123", "P178", "P136", "P495", "P577", "P750", "P400", "P404", "P921", "P737"]
 
     # get the general information about triplets
     triplets = request_triplets(CATEGORY, relations=RELATIONS, limit=LIMIT_TRIPLETS_PER_RELATION)
