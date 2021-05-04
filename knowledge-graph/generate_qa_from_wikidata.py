@@ -11,6 +11,7 @@ from multiprocessing import Pool as ProcessPool
 import uuid
 import random
 import time
+from rich.console import Console
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 logging.getLogger().setLevel(logging.INFO)
@@ -169,15 +170,18 @@ def request_triplets(category: str = "Q7889", relations: List[str] = None, limit
                     trash_pool.append((relation, entity))
                     logging.info("Trash bin + 1")
                     continue
-    for task in as_completed(processes):
-        article, answer_label, answer_url, relation_task, entity_task = task.result()
-        if article and answer_label and answer_url:
-            triplets[relation_task][entity_task]["subject_article"] = article
-            triplets[relation_task][entity_task]["text"] = answer_label
-            triplets[relation_task][entity_task]["answer_url"] = answer_url
-        else:
-            trash_pool.append((relation_task, entity_task))
-            logging.info("Trash bin + 1")
+    console = Console()
+    with console.status("[bold green]Train the model...[/bold green]") as status:
+        for task in as_completed(processes):
+            article, answer_label, answer_url, relation_task, entity_task = task.result()
+            if article and answer_label and answer_url:
+                triplets[relation_task][entity_task]["subject_article"] = article
+                triplets[relation_task][entity_task]["text"] = answer_label
+                triplets[relation_task][entity_task]["answer_url"] = answer_url
+            else:
+                trash_pool.append((relation_task, entity_task))
+                logging.info("Trash bin + 1")
+    console.log("Completed tasks.")
 
     for trash in trash_pool:
         del triplets[trash[0]][trash[1]]
