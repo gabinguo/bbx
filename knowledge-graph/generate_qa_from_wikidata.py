@@ -125,7 +125,7 @@ def formulate_queries_in_squad_style(triplets, question_map):
 
 # query the triplets from one specific category
 def request_triplets(category: str = "Q7889", relations: List[str] = None, limit=500, top_k=5,
-                     relation_excluded=["P31"]):
+                     relation_excluded=["P31"], num_workers=12):
     if not category or category[0] != 'Q':
         raise ValueError("category can't be None and it must start with 'Q'.")
     if not relations:
@@ -153,15 +153,19 @@ def request_triplets(category: str = "Q7889", relations: List[str] = None, limit
     trash_pool = []
 
     def combined_operations(payload):
+        start_time = time.time()
         triplets_, relation_, entity_ = payload
         article_ = process_full_text(
             fetch_full_text(triplets_[relation_][entity_]["subject_label"]))
         answer_url_ = request_object(entity_, relation_)[0]
         answer_label_ = request_label(answer_url_.split("/")[-1])
+        print(
+            f"Done, entity[{entity_}: {triplets_[relation_][entity_]['subject_label']}], relation[{relation_}] <<<<< Speed {round(time.time() - start_time, 2)}s/it",
+            end="\n")
         return article_, answer_label_, answer_url_, relation_, entity_
 
     processes = []
-    with ThreadPoolExecutor(max_workers=4) as executor:
+    with ThreadPoolExecutor(max_workers=num_workers) as executor:
         for relation in tqdm(triplets, desc="Send task to the multi-threading pool"):
             for entity in triplets[relation]:
                 try:
@@ -181,7 +185,7 @@ def request_triplets(category: str = "Q7889", relations: List[str] = None, limit
             else:
                 trash_pool.append((relation_task, entity_task))
                 logging.info("Trash bin + 1")
-    console.log("Completed tasks.")
+        console.log("Completed tasks.")
 
     for trash in trash_pool:
         del triplets[trash[0]][trash[1]]
@@ -194,12 +198,14 @@ def main():
     start_time = time.time()
     NUMBER_QUESTIONS = 5
     LIMIT_TRIPLETS_PER_RELATION = 1000
+    NUMBER_WORKERS = 12
     CATEGORY = "Q7889"  # Video Game
     RELATIONS = ["P123", "P178", "P136", "P495", "P577", "P750", "P400", "P404", "P921", "P737"]
     # RELATIONS = ["P123"]
 
     # get the general information about triplets
-    triplets = request_triplets(CATEGORY, relations=RELATIONS, limit=LIMIT_TRIPLETS_PER_RELATION)
+    triplets = request_triplets(CATEGORY, relations=RELATIONS, limit=LIMIT_TRIPLETS_PER_RELATION,
+                                num_workers=NUMBER_WORKERS)
 
     # label map => question map for properties
     label_map = {relation: request_all_labels(relation) for relation in triplets}
