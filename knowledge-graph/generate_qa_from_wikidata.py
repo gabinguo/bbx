@@ -7,6 +7,7 @@ from util import normalize_answer
 from sparql_queries import request_from_endpoint, query_subject_wikidata_wikipedia_url, query_all_labels, query_label, \
     query_object, construct_query_for_entity
 from tqdm import tqdm
+from multiprocessing import Pool as ProcessPool
 import uuid
 import random
 
@@ -40,20 +41,32 @@ def request_triplets(category: str = "Q7889", relations: List[str] = None, limit
             }
         triplets[relation] = result_map
 
+
+    trash_pool = []
     for relation in tqdm(triplets, desc="Get object/labels of property/article of subject: "):
         for entity in triplets[relation]:
+            # get the article
+            try:
+                triplets[relation][entity]["subject_article"] = process_full_text(
+                    fetch_full_text(triplets[relation][entity]["subject_label"]))
+            except:
+                trash_pool.append((relation, entity))
+                logging.info("Trash bin + 1")
+                continue
             try:
                 answer_url = request_object(entity, relation)[0]
                 answer_label = request_label(answer_url.split("/")[-1])
                 triplets[relation][entity]["text"] = answer_label
                 triplets[relation][entity]["answer_url"] = answer_url
             except IndexError:
-                logging.info(f"Answer for entity: {entity}, relation: {relation}")
+                trash_pool.append((relation, entity))
+                logging.info("Trash bin + 1")
                 continue
 
-            # get the article
-            triplets[relation][entity]["subject_article"] = process_full_text(
-                fetch_full_text(triplets[relation][entity]["subject_label"]))
+    for trash in trash_pool:
+        del triplets[trash[0]][trash[1]]
+    logging.info(f"Empty trash bin, {len(trash_pool)} examples are thrown away")
+
 
     return triplets
 
@@ -170,7 +183,7 @@ def formulate_queries_in_squad_style(triplets, question_map):
 
 def main():
     NUMBER_QUESTIONS = 5
-    LIMIT_TRIPLETS_PER_RELATION = 20
+    LIMIT_TRIPLETS_PER_RELATION = 1000
     CATEGORY = "Q7889"  # Video Game
     RELATIONS = ["P123", "P178", "P136", "P495", "P577", "P750", "P400", "P404", "P921", "P737"]
 

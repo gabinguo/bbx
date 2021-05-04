@@ -26,6 +26,9 @@ def check_integrity(queries):
     id_pool = set()
     title_pool = set()
 
+    answer_pool = []
+    question_pool = []
+
     for index, query in enumerate(tqdm(queries)):
         title_pool.add(query["title"])
         for paragraph in query["paragraphs"]:
@@ -35,9 +38,11 @@ def check_integrity(queries):
                 qa_count += 1
                 qa_id = qa["id"]
                 id_pool.add(qa_id)
+                question_pool.append(qa["question"])
                 if "is_impossible" in qa:
                     if not qa["is_impossible"]:
                         for answer in qa["answers"]:
+                            answer_pool.append(answer["text"])
                             answer_count += 1
                             answer_start = answer["answer_start"]
                             answer_len = len(answer["text"])
@@ -51,6 +56,7 @@ def check_integrity(queries):
                         qa_not_answerable_count += 1
                 else:
                     for answer in qa["answers"]:
+                        answer_pool.append(answer["text"])
                         answer_count += 1
                         answer_start = answer["answer_start"]
                         answer_len = len(answer["text"])
@@ -79,13 +85,28 @@ def check_integrity(queries):
         "unique_article": len(title_pool)
     }
     print_stats(stats)
+    for pool, info_type in zip([answer_pool, question_pool, paragraph_pool], ["Answer", "Question", "Passage"]):
+        stats = {
+            "avg_char_length": round(sum( map(len, pool) ) / len(pool), 2),
+            "avg_word_length": round(sum( map(len, [p.split() for p in pool]) ) / len(pool), 2),
+            "min_char_length": len(min(pool, key=len)),
+            "min_word_length": len(min([p.split() for p in pool], key=len)),
+            "max_char_length": len(max(pool, key=len)),
+            "max_word_length": len(max([p.split() for p in pool], key=len)),
+        }
+        print_more_stats(stats, info_type=info_type)
+        if info_type != "Passage":
+            print(f"min-char-length {info_type}: \n{min(pool, key=len)}")
+            print(f"min-word-length {info_type}: \n{min([p.split() for p in pool], key=len)}")
+
+
     if not_check_pool:
         print(f"Failed indexes: {not_check_pool}")
 
 
 def print_stats(stats):
-    global console, table
-    table.add_row(
+    global console, table_ds_info
+    table_ds_info.add_row(
         f"{stats['qa_count']}",
         f"{'No' if stats['unique_id_count'] == stats['qa_count'] else 'Yes'}",
         f"{stats['unique_article']}",
@@ -98,7 +119,29 @@ def print_stats(stats):
     )
 
     print("\n\n")
-    console.print(table)
+    console.print(table_ds_info)
+    print("\n\n")
+
+def print_more_stats(stats, info_type="Answer"):
+    global console
+    table_more_info = Table(show_header=True, title=f"[bold cyan]Statistics about the {info_type}[/bold cyan]")
+    table_more_info.add_column("Avg_char_length", style="cyan", no_wrap=True, justify="right")
+    table_more_info.add_column("Avg_word_length", style="cyan", no_wrap=True, justify="right")
+    table_more_info.add_column("Min_char_length", style="cyan", no_wrap=True, justify="right")
+    table_more_info.add_column("Min_word_length", style="cyan", no_wrap=True, justify="right")
+    table_more_info.add_column("Max_char_length", style="cyan", no_wrap=True, justify="right")
+    table_more_info.add_column("Max_word_length", style="cyan", no_wrap=True, justify="right")
+    table_more_info.add_row(
+        f"{stats['avg_char_length']}",
+        f"{stats['avg_word_length']}",
+        f"{stats['min_char_length']}",
+        f"{stats['min_word_length']}",
+        f"{stats['max_char_length']}",
+        f"{stats['max_word_length']}"
+    )
+
+    print("\n\n")
+    console.print(table_more_info)
     print("\n\n")
 
 
@@ -107,16 +150,17 @@ def print_stats(stats):
 
 if __name__ == "__main__":
     console = Console()
-    table = Table(show_header=True, title=f"[bold cyan]Statistics about the dataset (SQuAD-Like)[/bold cyan]")
-    table.add_column("Total", style="cyan", no_wrap=True, justify="right")
-    table.add_column("Has_repeat", style="yellow", no_wrap=True, justify="right")
-    table.add_column("Unique_Article", style="cyan", no_wrap=True, justify="right")
-    table.add_column("Unique_Paragraph", style="cyan", no_wrap=True, justify="right")
-    table.add_column("Total_Answer", style="cyan", no_wrap=True, justify="right")
-    table.add_column("Answerable", style="green", no_wrap=True, justify="right")
-    table.add_column("Not_Answerable", style="red", no_wrap=True, justify="right")
-    table.add_column("Passed", style="green", no_wrap=True, justify="right")
-    table.add_column("Failed", style="red", no_wrap=True, justify="right")
+    table_ds_info = Table(show_header=True, title=f"[bold cyan]Statistics about the dataset (SQuAD-Like)[/bold cyan]")
+    table_ds_info.add_column("Total", style="cyan", no_wrap=True, justify="right")
+    table_ds_info.add_column("Has_repeat", style="yellow", no_wrap=True, justify="right")
+    table_ds_info.add_column("Unique_Article", style="cyan", no_wrap=True, justify="right")
+    table_ds_info.add_column("Unique_Paragraph", style="cyan", no_wrap=True, justify="right")
+    table_ds_info.add_column("Total_Answer", style="cyan", no_wrap=True, justify="right")
+    table_ds_info.add_column("Answerable", style="green", no_wrap=True, justify="right")
+    table_ds_info.add_column("Not_Answerable", style="red", no_wrap=True, justify="right")
+    table_ds_info.add_column("Passed", style="green", no_wrap=True, justify="right")
+    table_ds_info.add_column("Failed", style="red", no_wrap=True, justify="right")
+
 
     args_parser = argparse.ArgumentParser()
     args_parser.add_argument("--filename", type=str, help="filepath to the squad-like file")
