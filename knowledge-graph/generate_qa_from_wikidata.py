@@ -169,16 +169,15 @@ def request_triplets(category: str = "Q7889", relations: List[str] = None, limit
                     trash_pool.append((relation, entity))
                     logging.info("Trash bin + 1")
                     continue
-    with tqdm(total=len(processes)) as pbar:
-        for task in as_completed(processes):
-            article, answer_label, answer_url, relation_task, entity_task = task.result()
-            if article and answer_label and answer_url:
-                triplets[relation_task][entity_task]["subject_article"] = article
-                triplets[relation_task][entity_task]["text"] = answer_label
-                triplets[relation_task][entity_task]["answer_url"] = answer_url
-            else:
-                trash_pool.append((relation_task, entity_task))
-            pbar.update(1)
+    for task in as_completed(processes):
+        article, answer_label, answer_url, relation_task, entity_task = task.result()
+        if article and answer_label and answer_url:
+            triplets[relation_task][entity_task]["subject_article"] = article
+            triplets[relation_task][entity_task]["text"] = answer_label
+            triplets[relation_task][entity_task]["answer_url"] = answer_url
+        else:
+            trash_pool.append((relation_task, entity_task))
+            logging.info("Trash bin + 1")
 
     for trash in trash_pool:
         del triplets[trash[0]][trash[1]]
