@@ -26,5 +26,5 @@ if __name__ == "__main__":
     queries = read_filename(args.filename)
     sampled_queries = sample_from_large_dataset(queries, 2000)
 
-    with open(f"./{output_filename}", 'w') as f:
+    with open(f"./{args.output_filename}", 'w') as f:
         json.dump({"version": "sampled_dataset", "data": sampled_queries}, f)
