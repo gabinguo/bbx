@@ -160,22 +160,22 @@ def request_triplets(category: str = "Q7889", relations: List[str] = None, limit
         answer_url_ = request_object(entity_, relation_)[0]
         answer_label_ = request_label(answer_url_.split("/")[-1])
         print(
-            f"Done, entity[{entity_}: {triplets_[relation_][entity_]['subject_label']}], relation[{relation_}] <<<<< Speed {round(time.time() - start_time, 2)}s/it",
+            f"Done in {str(round(time.time() - start_time, 2))+'s':>8}, entity[{entity_}: {triplets_[relation_][entity_]['subject_label']}], relation[{relation_}]",
             end="\n")
         return article_, answer_label_, answer_url_, relation_, entity_
 
     processes = []
-    with ThreadPoolExecutor(max_workers=num_workers) as executor:
-        for relation in tqdm(triplets, desc="Send task to the multi-threading pool"):
-            for entity in triplets[relation]:
-                try:
-                    processes.append(executor.submit(combined_operations, (triplets, relation, entity)))
-                except:
-                    trash_pool.append((relation, entity))
-                    logging.info("Trash bin + 1")
-                    continue
     console = Console()
-    with console.status("[bold green]Train the model...[/bold green]") as status:
+    with console.status("[bold green]Process the tasks...[/bold green]") as status:
+        with ThreadPoolExecutor(max_workers=num_workers) as executor:
+            for relation in tqdm(triplets, desc="Send task to the multi-threading pool"):
+                for entity in triplets[relation]:
+                    try:
+                        processes.append(executor.submit(combined_operations, (triplets, relation, entity)))
+                    except:
+                        trash_pool.append((relation, entity))
+                        logging.info("Trash bin + 1")
+                        continue
         for task in as_completed(processes):
             article, answer_label, answer_url, relation_task, entity_task = task.result()
             if article and answer_label and answer_url:
@@ -195,14 +195,21 @@ def request_triplets(category: str = "Q7889", relations: List[str] = None, limit
 
 
 def main():
+    """
+        Configurations
+    """
     start_time = time.time()
     NUMBER_QUESTIONS = 5
-    LIMIT_TRIPLETS_PER_RELATION = 1000
+    LIMIT_TRIPLETS_PER_RELATION = 10
     NUMBER_WORKERS = 12
     CATEGORY = "Q7889"  # Video Game
-    RELATIONS = ["P123", "P178", "P136", "P495", "P577", "P750", "P400", "P404", "P921", "P737"]
-    # RELATIONS = ["P123"]
+    #RELATIONS = ["P123", "P178", "P136", "P495", "P577", "P750", "P400", "P404", "P921", "P737"]
+    OUTPUT_FILENAME = "tryout"
+    RELATIONS = ["P123"]
 
+    """
+        Workflow
+    """
     # get the general information about triplets
     triplets = request_triplets(CATEGORY, relations=RELATIONS, limit=LIMIT_TRIPLETS_PER_RELATION,
                                 num_workers=NUMBER_WORKERS)
@@ -217,7 +224,7 @@ def main():
 
     logging.info(f"[Finished] Generated {len(query_pool)} examples")
 
-    with open("./known_relations_train.json", 'w') as f:
+    with open(f"./{OUTPUT_FILENAME}.json", 'w') as f:
         json.dump({"version": "known_relations", "data": query_pool}, f)
 
     logging.info(f"Time used {round(time.time() - start_time, 2)}s")
