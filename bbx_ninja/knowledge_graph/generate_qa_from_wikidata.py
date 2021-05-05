@@ -194,18 +194,19 @@ def request_triplets(category: str = "Q7889", relations: List[str] = None, limit
     return triplets
 
 
-def main():
+def main(num_label=None, limit_per_relation=None, num_worker=None, category=None, relations=None,
+         output_filename=None):
     """
         Configurations
     """
     start_time = time.time()
-    NUMBER_QUESTIONS = 5
-    LIMIT_TRIPLETS_PER_RELATION = 10
-    NUMBER_WORKERS = 12
-    CATEGORY = "Q7889"  # Video Game
+    NUMBER_QUESTIONS = 5 if not num_label else num_label
+    LIMIT_TRIPLETS_PER_RELATION = 10 if not limit_per_relation else limit_per_relation
+    NUMBER_WORKERS = 12 if not num_worker else num_worker
+    CATEGORY = "Q7889" if not category else category  # Video Game
     # RELATIONS = ["P123", "P178", "P136", "P495", "P577", "P750", "P400", "P404", "P921", "P737"]
-    OUTPUT_FILENAME = "tryout"
-    RELATIONS = ["P123"]
+    OUTPUT_FILENAME = "tryout" if not output_filename else output_filename
+    RELATIONS = ["P123"] if not relations else relations
 
     """
         Workflow
