@@ -105,7 +105,17 @@ def check_integrity(queries):
 
 
 def print_stats(stats):
-    global console, table_ds_info
+    console = Console()
+    table_ds_info = Table(show_header=True, title=f"[bold cyan]Statistics about the dataset (SQuAD-Like)[/bold cyan]")
+    table_ds_info.add_column("Total", style="cyan", no_wrap=True, justify="right")
+    table_ds_info.add_column("Has_repeat", style="yellow", no_wrap=True, justify="right")
+    table_ds_info.add_column("Unique_Article", style="cyan", no_wrap=True, justify="right")
+    table_ds_info.add_column("Unique_Paragraph", style="cyan", no_wrap=True, justify="right")
+    table_ds_info.add_column("Total_Answer", style="cyan", no_wrap=True, justify="right")
+    table_ds_info.add_column("Answerable", style="green", no_wrap=True, justify="right")
+    table_ds_info.add_column("Not_Answerable", style="red", no_wrap=True, justify="right")
+    table_ds_info.add_column("Passed", style="green", no_wrap=True, justify="right")
+    table_ds_info.add_column("Failed", style="red", no_wrap=True, justify="right")
     table_ds_info.add_row(
         f"{stats['qa_count']}",
         f"{'No' if stats['unique_id_count'] == stats['qa_count'] else 'Yes'}",
@@ -117,14 +127,13 @@ def print_stats(stats):
         f"{stats['qa_check_count']}",
         f"{stats['qa_not_check_count']}"
     )
-
     print("\n\n")
     console.print(table_ds_info)
     print("\n\n")
 
 
 def print_more_stats(stats, info_type="Answer"):
-    global console
+    console = Console()
     table_more_info = Table(show_header=True, title=f"[bold cyan]Statistics about the {info_type}[/bold cyan]")
     table_more_info.add_column("Avg_char_length", style="cyan", no_wrap=True, justify="right")
     table_more_info.add_column("Avg_word_length", style="cyan", no_wrap=True, justify="right")
@@ -140,25 +149,12 @@ def print_more_stats(stats, info_type="Answer"):
         f"{stats['max_char_length']}",
         f"{stats['max_word_length']}"
     )
-
     print("\n\n")
     console.print(table_more_info)
     print("\n\n")
 
 
 if __name__ == "__main__":
-    console = Console()
-    table_ds_info = Table(show_header=True, title=f"[bold cyan]Statistics about the dataset (SQuAD-Like)[/bold cyan]")
-    table_ds_info.add_column("Total", style="cyan", no_wrap=True, justify="right")
-    table_ds_info.add_column("Has_repeat", style="yellow", no_wrap=True, justify="right")
-    table_ds_info.add_column("Unique_Article", style="cyan", no_wrap=True, justify="right")
-    table_ds_info.add_column("Unique_Paragraph", style="cyan", no_wrap=True, justify="right")
-    table_ds_info.add_column("Total_Answer", style="cyan", no_wrap=True, justify="right")
-    table_ds_info.add_column("Answerable", style="green", no_wrap=True, justify="right")
-    table_ds_info.add_column("Not_Answerable", style="red", no_wrap=True, justify="right")
-    table_ds_info.add_column("Passed", style="green", no_wrap=True, justify="right")
-    table_ds_info.add_column("Failed", style="red", no_wrap=True, justify="right")
-
     args_parser = argparse.ArgumentParser()
     args_parser.add_argument("--filename", type=str, help="filepath to the squad-like file")
     args_parser.add_argument("--field", type=str, default="data", help="filed to parser examples")
