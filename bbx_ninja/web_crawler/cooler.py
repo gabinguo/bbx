@@ -4,6 +4,7 @@ from urllib.parse import urlparse
 import logging
 import re
 import json
+
 logger = logging.getLogger()
 
 
@@ -103,9 +104,9 @@ class Cooler:
                     existed_links: List = list(
                         sum(list(sub_links.values()), []))
                     sub_links[url_] = list(self._extract_sublinks_from_url(base_url=url_, filter_urls=filter_urls,
-                                                                            existed_links=existed_links))
+                                                                           existed_links=existed_links))
                 print(f"sub_links: {sub_links}, existed_links: {existed_links}")
-                
+
                 for url in sub_links:
                     result = self._write_to_files(
                         sub_links[url][:crawler_limit], output_dir=output_dir, base_url=url)
@@ -152,8 +153,8 @@ class Cooler:
         return base_url_.path == sub_link_.path and base_url_.netloc == sub_link_.netloc
 
     def _extract_sublinks_from_url(self, base_url: str,
-                                    filter_urls: Optional[List] = None,
-                                    existed_links: List = None) -> set:
+                                   filter_urls: Optional[List] = None,
+                                   existed_links: List = None) -> set:
         self.driver.get(base_url)
         a_elements = self.driver.find_elements_by_tag_name('a')
         sub_links = set()

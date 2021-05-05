@@ -160,7 +160,7 @@ def request_triplets(category: str = "Q7889", relations: List[str] = None, limit
         answer_url_ = request_object(entity_, relation_)[0]
         answer_label_ = request_label(answer_url_.split("/")[-1])
         print(
-            f"Done in {str(round(time.time() - start_time, 2))+'s':>8}, entity[{entity_}: {triplets_[relation_][entity_]['subject_label']}], relation[{relation_}]",
+            f"Done in {str(round(time.time() - start_time, 2)) + 's':>8}, entity[{entity_}: {triplets_[relation_][entity_]['subject_label']}], relation[{relation_}]",
             end="\n")
         return article_, answer_label_, answer_url_, relation_, entity_
 
@@ -203,7 +203,7 @@ def main():
     LIMIT_TRIPLETS_PER_RELATION = 10
     NUMBER_WORKERS = 12
     CATEGORY = "Q7889"  # Video Game
-    #RELATIONS = ["P123", "P178", "P136", "P495", "P577", "P750", "P400", "P404", "P921", "P737"]
+    # RELATIONS = ["P123", "P178", "P136", "P495", "P577", "P750", "P400", "P404", "P921", "P737"]
     OUTPUT_FILENAME = "tryout"
     RELATIONS = ["P123"]
 

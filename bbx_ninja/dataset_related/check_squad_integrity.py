@@ -1,11 +1,13 @@
 import json
 from tqdm import tqdm
+
 try:
     from rich.console import Console
     from rich.table import Table
 except ImportError:
     print("Can't find module rich, try using `pip install rich`")
 import argparse
+
 
 def read_squad_file(filepath, field="data"):
     """
@@ -14,6 +16,7 @@ def read_squad_file(filepath, field="data"):
     with open(filepath, 'r') as f:
         queries = json.load(f)[field]
     return queries
+
 
 def check_integrity(queries):
     qa_count = 0
@@ -46,7 +49,7 @@ def check_integrity(queries):
                             answer_count += 1
                             answer_start = answer["answer_start"]
                             answer_len = len(answer["text"])
-                            answer_from_context = context[answer_start: answer_start+answer_len]
+                            answer_from_context = context[answer_start: answer_start + answer_len]
                             if answer_from_context == answer["text"]:
                                 qa_check_count += 1
                             else:
@@ -60,7 +63,7 @@ def check_integrity(queries):
                         answer_count += 1
                         answer_start = answer["answer_start"]
                         answer_len = len(answer["text"])
-                        answer_from_context = context[answer_start: answer_start+answer_len]
+                        answer_from_context = context[answer_start: answer_start + answer_len]
                         if answer_from_context == answer["text"]:
                             qa_check_count += 1
                         else:
@@ -71,8 +74,6 @@ def check_integrity(queries):
     except AssertionError:
         print("Error Assertion: qa_count == (qa_check_count + qa_not_check_count + qa_not_answerable_count)")
         print(f"Possible reason: qa_count equals to {qa_count}, whilst answer_count equals to {answer_count}")
-
-
 
     stats = {
         "qa_count": qa_count,
@@ -87,8 +88,8 @@ def check_integrity(queries):
     print_stats(stats)
     for pool, info_type in zip([answer_pool, question_pool, paragraph_pool], ["Answer", "Question", "Passage"]):
         stats = {
-            "avg_char_length": round(sum( map(len, pool) ) / len(pool), 2),
-            "avg_word_length": round(sum( map(len, [p.split() for p in pool]) ) / len(pool), 2),
+            "avg_char_length": round(sum(map(len, pool)) / len(pool), 2),
+            "avg_word_length": round(sum(map(len, [p.split() for p in pool])) / len(pool), 2),
             "min_char_length": len(min(pool, key=len)),
             "min_word_length": len(min([p.split() for p in pool], key=len)),
             "max_char_length": len(max(pool, key=len)),
@@ -98,7 +99,6 @@ def check_integrity(queries):
         if info_type != "Passage":
             print(f"min-char-length {info_type}: \n{min(pool, key=len)}")
             print(f"min-word-length {info_type}: \n{min([p.split() for p in pool], key=len)}")
-
 
     if not_check_pool:
         print(f"Failed indexes: {not_check_pool}")
@@ -121,6 +121,7 @@ def print_stats(stats):
     print("\n\n")
     console.print(table_ds_info)
     print("\n\n")
+
 
 def print_more_stats(stats, info_type="Answer"):
     global console
@@ -145,9 +146,6 @@ def print_more_stats(stats, info_type="Answer"):
     print("\n\n")
 
 
-
-
-
 if __name__ == "__main__":
     console = Console()
     table_ds_info = Table(show_header=True, title=f"[bold cyan]Statistics about the dataset (SQuAD-Like)[/bold cyan]")
@@ -161,7 +159,6 @@ if __name__ == "__main__":
     table_ds_info.add_column("Passed", style="green", no_wrap=True, justify="right")
     table_ds_info.add_column("Failed", style="red", no_wrap=True, justify="right")
 
-
     args_parser = argparse.ArgumentParser()
     args_parser.add_argument("--filename", type=str, help="filepath to the squad-like file")
     args_parser.add_argument("--field", type=str, default="data", help="filed to parser examples")
@@ -169,8 +166,3 @@ if __name__ == "__main__":
 
     queries = read_squad_file(args.filename, field=args.field)
     check_integrity(queries)
-
-
-
-
-
