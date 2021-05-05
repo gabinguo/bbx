@@ -1,15 +1,15 @@
-from distutils.core import setup
+from setuptools import find_packages, setup
 
 setup(
     name='bbx_ninja',  # How you named your package folder (MyLib)
-    packages=['bbx_ninja'],  # Chose the same as "name"
-    version='0.0.5',  # Start with a small number and increase it with every change you make
+    packages=find_packages(exclude=["*.tests", "*.tests.*", "tests.*", "tests"]),
+    version='0.0.6',  # Start with a small number and increase it with every change you make
     license='MIT',  # Chose a license from here: https://help.github.com/articles/licensing-a-repository
     description='bbx repo to make my life easier.',  # Give a short description about your library
     author='Kunpeng GUO',  # Type in your name
     author_email='kunpeng.guo@univ-st-etienne.fr',  # Type in your E-Mail
     url='https://github.com/gabinguo/',  # Provide either the link to your github or to your website
-    download_url='https://github.com/gabinguo/bbx/releases/download/v0.0.5/bbx_ninja_v0.0.5.tar.gz',
+    download_url='https://github.com/gabinguo/bbx/releases/download/v0.0.6/bbx_ninja_v0.0.6.tar.gz',
     keywords=['scripts', 'anything', 'python'],  # Keywords that define your package best
     install_requires=[
         "tqdm",
