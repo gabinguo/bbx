@@ -3,8 +3,8 @@ import urllib.parse as uparse
 import logging
 import json
 from typing import List
-from util import normalize_answer
-from sparql_queries import request_from_endpoint, query_subject_wikidata_wikipedia_url, query_all_labels, query_label, \
+from .util import normalize_answer
+from .sparql_queries import request_from_endpoint, query_subject_wikidata_wikipedia_url, query_all_labels, query_label, \
     query_object, construct_query_for_entity
 from tqdm import tqdm
 from multiprocessing import Pool as ProcessPool

@@ -1,2 +1,10 @@
 /.DS_Store
 /*/.DS_Store
+
+bbx/web_crawler/.ipynb_checkpoints/
+bbx/web_crawler/Untitled.ipynb
+bbx/web_crawler/__pycache__/
+
+.idea/
+dist/
+*.tar.gz
