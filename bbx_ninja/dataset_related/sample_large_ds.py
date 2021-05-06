@@ -2,8 +2,6 @@ import json
 import random
 import argparse
 
-random.seed = 42
-
 
 def read_filename(filename=""):
     with open(filename, 'r') as f:
@@ -17,6 +15,7 @@ def sample_from_large_dataset(queries, count=2000):
 
 
 if __name__ == "__main__":
+    random.seed = 42
     parser = argparse.ArgumentParser()
     parser.add_argument("--filename", type=str, help="Path to the filename to sample.")
     parser.add_argument("--output_filename", type=str, default="sampled_ds.json",
