@@ -92,6 +92,7 @@ query_entity_wikipedia = """
     }}
 """
 
+
 def construct_query_for_entity(entity_id):
     if entity_id[0] == 'Q':
         query = """
@@ -113,6 +114,7 @@ def construct_query_for_entity(entity_id):
 
     return query
 
+
 def request_from_endpoint(query=None):
     if query is None:
         raise ValueError("query can't be None")
@@ -120,6 +122,7 @@ def request_from_endpoint(query=None):
     sparql.setReturnFormat(JSON)
     sparql_result = sparql.query().convert()
     return sparql_result
+
 
 def check_object_existence(qid, pid):
     query = """
@@ -129,17 +132,14 @@ def check_object_existence(qid, pid):
     """
     response = request_from_endpoint(query.format(qid=qid, pid=pid))
     if len(response["results"]["bindings"]) == 0:
-        return False
-    return True
+        return False, []
+    return True, [binding['object']['value'] for binding in response["results"]["bindings"]]
 
 
 # playground
 if __name__ == "__main__":
     entity = "http://www.wikidata.org/entity/Q100042"
     property = "http://www.wikidata.org/prop/direct/P123"
-    response_content = request_from_endpoint(query=query_object.format(entity=entity, property=property))
-    answers = []
-    for answer in response_content["results"]["bindings"]:
-        answers.append(answer['answer_entity']['value'])
-    print(answers)
-
+    flag, objects = check_object_existence("Q223341", "P123")
+    if flag:
+        print(objects)

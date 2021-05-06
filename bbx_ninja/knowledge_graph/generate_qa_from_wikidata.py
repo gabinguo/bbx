@@ -219,8 +219,10 @@ def prepare_wikidata_completion(qid=None, pid=None, is_category=False):
         }
     }
     # step 0: make sure the object is missing in Wikidata knowledge graph
-    if check_object_existence(qid=qid, pid=pid):
-        return {"result": "fail", "message": f"Object already exists in Wikidata for {pid} of {qid}"}
+    flag, objects = check_object_existence(qid=qid, pid=pid)
+    if flag:
+        return {"result": "fail", "message": f"Object already exists in Wikidata for {pid} of {qid}",
+                "objects": objects}
 
     # step 1: make sure there is Wikipedia page related to qid.
     response = request_from_endpoint(query_entity_wikipedia.format(qid=qid))  # request the wikipedia link
@@ -287,6 +289,7 @@ def main(num_label=None, limit_per_relation=None, num_worker=None, category=None
 
 if __name__ == "__main__":
     from pprint import pprint
+
     qid = "Q223341"
     pid = "P404"
     result = prepare_wikidata_completion(qid=qid, pid=pid)
