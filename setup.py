@@ -3,13 +3,13 @@ from setuptools import find_packages, setup
 setup(
     name='bbx_ninja',  # How you named your package folder (MyLib)
     packages=find_packages(exclude=["*.tests", "*.tests.*", "tests.*", "tests"]),
-    version='0.0.8',  # Start with a small number and increase it with every change you make
+    version='0.0.9',  # Start with a small number and increase it with every change you make
     license='MIT',  # Chose a license from here: https://help.github.com/articles/licensing-a-repository
     description='bbx repo to make my life easier.',  # Give a short description about your library
     author='Kunpeng GUO',  # Type in your name
     author_email='kunpeng.guo@univ-st-etienne.fr',  # Type in your E-Mail
     url='https://github.com/gabinguo/',  # Provide either the link to your github or to your website
-    download_url='https://github.com/gabinguo/bbx/releases/download/v0.0.8/bbx_ninja_v0.0.8.tar.gz',
+    download_url='https://github.com/gabinguo/bbx/releases/download/v0.0.9/bbx_ninja_v0.0.9.tar.gz',
     keywords=['scripts', 'anything', 'python'],  # Keywords that define your package best
     install_requires=[
         "tqdm",
