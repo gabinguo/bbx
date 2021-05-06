@@ -7,7 +7,6 @@ from .util import normalize_answer
 from .sparql_queries import request_from_endpoint, query_subject_wikidata_wikipedia_url, query_all_labels, query_label, \
     query_object, construct_query_for_entity, query_entity_wikipedia, check_object_existence
 from tqdm import tqdm
-from multiprocessing import Pool as ProcessPool
 import uuid
 import random
 import time
