@@ -78,6 +78,20 @@ query_label = """
         }} limit 3000
 """
 
+# get wikipedia link of entity via qid
+"""
+    :params
+    :qid entity identifier in Wikidata like Q223341 for League of legend video game.
+"""
+query_entity_wikipedia = """
+    PREFIX schema: <http://schema.org/>
+    select ?wikipedia_link
+    where {{
+      ?wikipedia_link schema:about <http://www.wikidata.org/entity/{qid}> ;
+      schema:isPartOf <https://en.wikipedia.org/>.
+    }}
+"""
+
 def construct_query_for_entity(entity_id):
     if entity_id[0] == 'Q':
         query = """
@@ -106,6 +120,17 @@ def request_from_endpoint(query=None):
     sparql.setReturnFormat(JSON)
     sparql_result = sparql.query().convert()
     return sparql_result
+
+def check_object_existence(qid, pid):
+    query = """
+    select ?object where {{
+          <http://www.wikidata.org/entity/{qid}> <http://www.wikidata.org/prop/direct/{pid}> ?object
+    }}
+    """
+    response = request_from_endpoint(query.format(qid=qid, pid=pid))
+    if len(response["results"]["bindings"]) == 0:
+        return False
+    return True
 
 
 # playground

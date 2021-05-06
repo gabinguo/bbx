@@ -5,7 +5,7 @@ import json
 from typing import List
 from .util import normalize_answer
 from .sparql_queries import request_from_endpoint, query_subject_wikidata_wikipedia_url, query_all_labels, query_label, \
-    query_object, construct_query_for_entity
+    query_object, construct_query_for_entity, query_entity_wikipedia, check_object_existence
 from tqdm import tqdm
 from multiprocessing import Pool as ProcessPool
 import uuid
@@ -194,6 +194,61 @@ def request_triplets(category: str = "Q7889", relations: List[str] = None, limit
     return triplets
 
 
+def prepare_wikidata_completion(qid=None, pid=None, is_category=False):
+    """
+        Get the subject's label, Wikipedia article, and get property's label to construct the question
+    :param qid: Entity Id starts with Q
+    :param pid: Property Id starts with P
+    :param is_category: flag indicates if qid is a category entity id.
+    :return: in dict format the information needed for wikidata completion process
+    """
+    if is_category:
+        raise NotImplementedError("Not implemented yet.")
+    if not pid and (not is_category or not qid):
+        raise ValueError("qid can't be None / when pid is None make sure qid is a category and set is_category to True")
+    if qid[0] != "Q" or pid[0] != "P":
+        raise ValueError("qid should start with 'Q' and pid should start with 'P'")
+
+    payload = {
+        "subject": {
+            "id": qid,
+            "wikidata_url": f"http://www.wikidata.org/entity/{qid}"
+        },
+        "property": {
+            "id": pid,
+            "wikidata_url": f"http://www.wikidata.org/prop/direct/{pid}"
+        }
+    }
+    # step 0: make sure the object is missing in Wikidata knowledge graph
+    if check_object_existence(qid=qid, pid=pid):
+        return {"result": "fail", "message": f"Object already exists in Wikidata for {pid} of {qid}"}
+
+    # step 1: make sure there is Wikipedia page related to qid.
+    response = request_from_endpoint(query_entity_wikipedia.format(qid=qid))  # request the wikipedia link
+    wikipedia_url = None
+    if len(response["results"]["bindings"]) != 0:
+        wikipedia_url = response["results"]["bindings"][0]["wikipedia_link"]["value"]
+    if not wikipedia_url:
+        raise ValueError("Provided qid does not have a Wikipedia page.")
+    payload["subject"]["wikipedia_url"] = wikipedia_url
+    payload["subject"]["label"] = wikipedia_url.split("/")[-1]
+    full_text = fetch_full_text(payload["subject"]["label"])  # request the wikipedia article
+
+    if not full_text:
+        raise ValueError("Provided qid does not have a Wikipedia article.")
+    article = process_full_text(full_text)
+    payload["subject"]["wikipedia_article"] = article
+
+    # step 2: get up to 5 labels of property for constructing the question.
+    all_labels = request_all_labels(pid)
+    random.shuffle(all_labels)
+    payload["property"]["labels"] = all_labels[:5]
+
+    # Done
+    payload["result"] = "success"
+    return payload
+
+
 def main(num_label=None, limit_per_relation=None, num_worker=None, category=None, relations=None,
          output_filename=None):
     """
@@ -232,4 +287,8 @@ def main(num_label=None, limit_per_relation=None, num_worker=None, category=None
 
 
 if __name__ == "__main__":
-    main()
+    from pprint import pprint
+    qid = "Q223341"
+    pid = "P404"
+    result = prepare_wikidata_completion(qid=qid, pid=pid)
+    pprint(result)
